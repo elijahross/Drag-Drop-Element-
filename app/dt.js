@@ -31,16 +31,18 @@ export const Data = () => {
     },
   ];
 
-  const [isActive, setIsActive] = useState();
+  const [isActive, setIsActive] = useState(undefined);
+  const [listOfItems, setListOfItems] = useState(datas);
   const ref = useRef();
 
   const dragStart = (e, index) => {
     setIsActive(index);
     const container = ref.current;
-    const items = [...container.childNodes];
+    let items = [...container.childNodes];
+    let activeData = datas[index];
+    let newData = [...datas];
     const activeItem = items[index];
     const itemsBelow = items.slice(index + 1);
-    const allOtherItems = items.filter((_, i) => i !== index);
 
     // Conotainer Size
     const boundingBox = activeItem.getBoundingClientRect();
@@ -68,57 +70,65 @@ export const Data = () => {
     activeItem.style.cursor = "grabbing";
 
     // Movement of inner items
-    const distance = boundingBox.height + "px";
-    itemsBelow.forEach((ite) => {
-      ite.style.transform = `translateY(${distance} + ${space})`;
+    const distance = boundingBox.height + space;
+    itemsBelow.forEach((item) => {
+      item.style.transform = `translateY(${distance}px)`;
+      item.setAttribute("below", "");
     });
 
     //mouse movement
     let x = e.clientX;
     let y = e.clientY;
+    const updt = [...ref.current.childNodes];
+    const allOtherItems = updt.filter((_, i) => i !== index);
+    console.log(allOtherItems);
     document.onpointermove = dragMove;
 
     function dragMove(e) {
       const posX = e.clientX - x;
       const posY = e.clientY - y;
-      activeItem.style.transform = `translate(${posX}px, ${posY}px)`;
-    }
+      activeItem.style.transform = `translateY(${posY}px) translateX(${posX}px)`;
 
-    allOtherItems.forEach((item) => {
-      const rect1 = activeItem.getBoundingClientRect();
-      const rect2 = item.getBoundingClientRect();
-      console.log(rect1, rect2);
-
-      let isOverlaping =
-        rect1.y < rect2.y + rect2.height / 2 &&
-        rect1.y + rect1.height / 2 > rect2.y;
-
-      if (isOverlaping) {
-        if (item.getAttribute("style")) {
-          item.style.transform = `translateY(${distance} + ${space})`;
-          index++;
-        } else {
-          item.style.transform = `translateY(${distance} + ${space})`;
-          index--;
+      allOtherItems.forEach((item) => {
+        const rect1 = activeItem.getBoundingClientRect();
+        const rect2 = item.getBoundingClientRect();
+        const rect3 = container.getBoundingClientRect();
+        let isOverlaping =
+          rect1.y < rect2.y + rect2.height / 2 &&
+          rect1.y + rect1.height / 2 > rect2.y &&
+          rect1.bottom < rect3.bottom &&
+          rect1.top > rect3.top;
+        if (isOverlaping) {
+          if (item.hasAttribute("below") && item.id !== "div-temp") {
+            item.style.transform = "";
+            index++;
+            item.removeAttribute("below");
+          } else {
+            item.style.transform = `translateY(${distance}px)`;
+            index--;
+            item.setAttribute("below", "");
+          }
+          console.log(index);
+          newData = datas.filter((item) => item.id !== activeData.id);
+          newData.splice(index, 0, activeData);
         }
-      }
-    });
-
-    //Ending
-    document.onpointerup = dragEnd;
-    function dragEnd() {
-      document.onpointerup = "";
-      setIsActive(undefined);
-      activeItem.style = "";
-      container.removeChild(div);
-      items.forEach((item) => {
-        item.style = "";
       });
+
+      //Ending
+      document.onpointerup = dragEnd;
+      function dragEnd() {
+        document.onpointermove = "";
+        activeItem.style = "";
+        setIsActive(undefined);
+        container.removeChild(div);
+        items.forEach((item) => (item.style = ""));
+      }
+      setListOfItems(newData);
     }
   };
 
   return (
-    <div className=" flex-1 flex-col rounded-md border-[1px] border-[#f7f7f7] p-4 ">
+    <div className=" flex-1 flex-col rounded-md border-[1px] border-[#1b1b1b] dark:border-[#f7f7f7] p-4 ">
       <div ref={ref}>
         {datas.map((points, index) => (
           <div
@@ -126,9 +136,9 @@ export const Data = () => {
             onPointerDown={(e) => dragStart(e, index)}
           >
             <div
-              className={`${
-                isActive == index ? "dragging" : ""
-              } rounded-md my-2 border-solid border-[1px] border-[#f7f7f7] p-4`}
+              className={`${isActive == index ? "dragging shadow-md" : ""} ${
+                isActive === undefined ? "" : "prevent-select"
+              } rounded-md my-2 border-solid border-[1px] border-[#1b1b1b] dark:border-[#f7f7f7] p-4`}
             >
               <div className="flex flex-col">
                 <h2 className="text-[15px] font-bold m-2"> {points.title} </h2>
