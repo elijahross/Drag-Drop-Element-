@@ -1,64 +1,27 @@
 "use client";
 import Image from "next/image";
-import React, { useRef, useEffect, useState, createRef } from "react";
+import React, { useRef, useState } from "react";
+import { datas } from "./datas.js";
 
-export const Data = () => {
-  const datas = [
-    {
-      id: 1,
-      title: "The Art of Programming",
-      subtitle: "Mastering the Coding Craft",
-    },
-    {
-      id: 2,
-      title: "Beyond the Horizon",
-      subtitle: "Exploring the Unknown",
-    },
-    {
-      id: 3,
-      title: "Quantum Minds",
-      subtitle: "Unraveling the Mysteries of Thought",
-    },
-    {
-      id: 4,
-      title: "The Silent Symphony",
-      subtitle: "A Tale of Music and Emotion",
-    },
-    {
-      id: 5,
-      title: "Into the Wilderness",
-      subtitle: "Surviving Nature's Challenges",
-    },
-  ];
-
+export function OrderedList() {
   const [isActive, setIsActive] = useState(undefined);
   const [listOfItems, setListOfItems] = useState(datas);
   const ref = useRef();
 
-  const dragStart = (e, index) => {
+  function dragStart(e, index) {
     setIsActive(index);
-    const container = ref.current;
+    let container = ref.current;
     let items = [...container.childNodes];
-    let activeData = datas[index];
-    let newData = [...datas];
-    const activeItem = items[index];
-    const itemsBelow = items.slice(index + 1);
+    let activeData = listOfItems[index];
+    let activeItem = items[index];
+    let itemsBelow = items.slice(index + 1);
+    let newData = listOfItems;
 
     // Conotainer Size
     const boundingBox = activeItem.getBoundingClientRect();
     const space =
       items[1].getBoundingClientRect().top -
       items[0].getBoundingClientRect().bottom;
-
-    // white space in the box
-    const div = document.createElement("div");
-    div.id = "div-temp";
-    div.style.width = boundingBox.width + "px";
-    div.style.height = boundingBox.height + "px";
-    div.style.top = boundingBox.top + "px";
-    div.style.left = boundingBox.left + "px";
-    div.style.pointerEvents = "none";
-    container.appendChild(div);
 
     // styling the item, to make it draggable
     activeItem.style.position = "fixed";
@@ -69,7 +32,15 @@ export const Data = () => {
     activeItem.style.left = boundingBox.left + "px";
     activeItem.style.cursor = "grabbing";
 
-    // Movement of inner items
+    // white space in the box
+    const div = document.createElement("div");
+    div.id = "div-temp";
+    div.style.width = boundingBox.width + "px";
+    div.style.height = boundingBox.height + "px";
+    div.style.pointerEvents = "none";
+    container.appendChild(div);
+
+    // space shift
     const distance = boundingBox.height + space;
     itemsBelow.forEach((item) => {
       item.style.transform = `translateY(${distance}px)`;
@@ -81,7 +52,6 @@ export const Data = () => {
     let y = e.clientY;
     const updt = [...ref.current.childNodes];
     const allOtherItems = updt.filter((_, i) => i !== index);
-    console.log(allOtherItems);
     document.onpointermove = dragMove;
 
     function dragMove(e) {
@@ -98,39 +68,43 @@ export const Data = () => {
           rect1.y + rect1.height / 2 > rect2.y &&
           rect1.bottom < rect3.bottom &&
           rect1.top > rect3.top;
-        if (isOverlaping) {
-          if (item.hasAttribute("below") && item.id !== "div-temp") {
+        if (isOverlaping && item.id !== "div-temp") {
+          if (item.hasAttribute("below")) {
             item.style.transform = "";
-            index++;
             item.removeAttribute("below");
+            if (index < 4) {
+              index++;
+            }
           } else {
             item.style.transform = `translateY(${distance}px)`;
-            index--;
             item.setAttribute("below", "");
+            if (index > 0) {
+              index--;
+            }
           }
-          console.log(index);
-          newData = datas.filter((item) => item.id !== activeData.id);
-          newData.splice(index, 0, activeData);
         }
       });
-
-      //Ending
-      document.onpointerup = dragEnd;
-      function dragEnd() {
-        document.onpointermove = "";
-        activeItem.style = "";
-        setIsActive(undefined);
-        container.removeChild(div);
-        items.forEach((item) => (item.style = ""));
-      }
+      console.log(index);
+    }
+    //Ending
+    document.onpointerup = dragEnd;
+    function dragEnd() {
+      newData = listOfItems.filter((i) => i !== activeData);
+      newData.splice(index, 0, activeData);
+      document.onpointermove = "";
+      document.onpointerup = "";
+      activeItem.style = "";
+      setIsActive(undefined);
+      container.removeChild(div);
+      items.forEach((item) => (item.style = ""));
       setListOfItems(newData);
     }
-  };
+  }
 
   return (
-    <div className=" flex-1 flex-col rounded-md border-[1px] border-[#1b1b1b] dark:border-[#f7f7f7] p-4 ">
+    <div className=" flex-1 flex-col rounded-md border-[1px] border-[#1b1b1b] dark:border-[#f7f7f7]">
       <div ref={ref}>
-        {datas.map((points, index) => (
+        {listOfItems.map((points, index) => (
           <div
             key={`${index}${points.id}`}
             onPointerDown={(e) => dragStart(e, index)}
@@ -138,7 +112,7 @@ export const Data = () => {
             <div
               className={`${isActive == index ? "dragging shadow-md" : ""} ${
                 isActive === undefined ? "" : "prevent-select"
-              } rounded-md my-2 border-solid border-[1px] border-[#1b1b1b] dark:border-[#f7f7f7] p-4`}
+              } rounded-md m-2 border-solid border-[1px] border-[#1b1b1b] dark:border-[#f7f7f7] p-4`}
             >
               <div className="flex flex-col">
                 <h2 className="text-[15px] font-bold m-2"> {points.title} </h2>
@@ -150,4 +124,4 @@ export const Data = () => {
       </div>
     </div>
   );
-};
+}
