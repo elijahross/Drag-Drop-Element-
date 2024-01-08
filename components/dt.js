@@ -84,7 +84,6 @@ export function OrderedList() {
           }
         }
       });
-      console.log(index);
     }
     //Ending
     document.onpointerup = dragEnd;
